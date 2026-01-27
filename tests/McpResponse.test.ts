@@ -937,7 +937,7 @@ describe('extensions', () => {
       const emptyText = getTextContent(emptyResult.content[0]);
       assert.ok(
         emptyText.includes('No extensions installed.'),
-        'Should show message for ampty extensions',
+        'Should show message for empty extensions',
       );
 
       response.resetResponseLineForTesting();
@@ -965,6 +965,54 @@ describe('extensions', () => {
       );
 
       t.assert.snapshot?.(getTextContent(content[0]));
+      t.assert.snapshot?.(JSON.stringify(structuredContent, null, 2));
+    });
+  });
+});
+
+describe('in-page tools', () => {
+  it('lists in-page tools', async t => {
+    await withMcpContext(async (response, context) => {
+      response.setListInPageTools();
+      // Empty state testing
+      const emptyResult = await response.handle('test', context);
+      const emptyText = getTextContent(emptyResult.content[0]);
+      assert.ok(
+        emptyText.includes('No in-page tools installed.'),
+        'Should show message for empty in-page tools',
+      );
+
+      response.resetResponseLineForTesting();
+      // Testing with in-page tools
+      context.getInPageTools = () => ({
+          name: 'My Tool Group',
+          description: 'A group of tools',
+          tools: [
+            {
+              name: 'myTool',
+              description: 'Does something',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  foo: {type: 'string'},
+                },
+              },
+              execute: () => undefined,
+            },
+          ],
+        });
+      response.setListInPageTools();
+      const {content, structuredContent} = await response.handle(
+        'test',
+        context,
+      );
+
+      const responseText = getTextContent(content[0]);
+      t.assert.snapshot?.(responseText);
+      assert.ok(
+        responseText.includes('inputSchema={"type":"object"'),
+        'Response should include inputSchema',
+      );
       t.assert.snapshot?.(JSON.stringify(structuredContent, null, 2));
     });
   });

@@ -30,6 +30,7 @@ import type {
   PredefinedNetworkConditions,
   Viewport,
 } from './third_party/index.js';
+import {type ToolGroup} from './tools/inPage.js';
 import {listPages} from './tools/pages.js';
 import {takeSnapshot} from './tools/snapshot.js';
 import {CLOSE_PAGE_ERROR} from './tools/ToolDefinition.js';
@@ -126,6 +127,7 @@ export class McpContext implements Context {
   #userAgentMap = new WeakMap<Page, string>();
   #colorSchemeMap = new WeakMap<Page, 'dark' | 'light'>();
   #dialog?: Dialog;
+  #inPageTools?: ToolGroup;
 
   #pageIdMap = new WeakMap<Page, number>();
   #nextPageId = 1;
@@ -431,6 +433,14 @@ export class McpContext implements Context {
     void newPage.emulateFocusedPage(true).catch(error => {
       this.logger('Error turning on focused page emulation', error);
     });
+  }
+
+  setInPageTools(toolGroup: ToolGroup|undefined) {
+    this.#inPageTools = toolGroup;
+  }
+
+  getInPageTools(): ToolGroup | undefined {
+    return this.#inPageTools;
   }
 
   #updateSelectedPageTimeouts() {

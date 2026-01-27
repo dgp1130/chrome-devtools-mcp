@@ -16,6 +16,7 @@ import type {
   ResourceType,
   TextContent,
 } from './third_party/index.js';
+import type {ToolGroup} from './tools/inPage.js';
 import {handleDialog} from './tools/pages.js';
 import type {
   DevToolsData,
@@ -62,6 +63,7 @@ export class McpResponse implements Response {
     includePreservedMessages?: boolean;
   };
   #listExtensions?: boolean;
+  #listInPageTools?: boolean;
   #devToolsData?: DevToolsData;
   #tabId?: string;
 
@@ -85,6 +87,10 @@ export class McpResponse implements Response {
 
   setListExtensions(): void {
     this.#listExtensions = true;
+  }
+
+  setListInPageTools(): void {
+    this.#listInPageTools = true;
   }
 
   setIncludeNetworkRequests(
@@ -307,6 +313,12 @@ export class McpResponse implements Response {
     if (this.#listExtensions) {
       extensions = context.listExtensions();
     }
+
+    let inPageTools: ToolGroup | undefined;
+    if (this.#listInPageTools) {
+      inPageTools = context.getInPageTools();
+    }
+
     let consoleMessages: Array<ConsoleFormatter | IssueFormatter> | undefined;
     if (this.#consoleDataOptions?.include) {
       let messages = context.getConsoleData(
@@ -401,6 +413,7 @@ export class McpResponse implements Response {
       traceInsight: this.#attachedTraceInsight,
       traceSummary: this.#attachedTraceSummary,
       extensions,
+      inPageTools,
     });
   }
 
@@ -416,6 +429,7 @@ export class McpResponse implements Response {
       traceSummary?: TraceResult;
       traceInsight?: TraceInsightData;
       extensions?: InstalledExtension[];
+      inPageTools?: ToolGroup;
     },
   ): {content: Array<TextContent | ImageContent>; structuredContent: object} {
     const structuredContent: {
@@ -429,6 +443,7 @@ export class McpResponse implements Response {
       traceSummary?: string;
       traceInsights?: Array<{insightName: string; insightKey: string}>;
       extensions?: object[];
+      inPageTools?: object;
       message?: string;
       networkConditions?: string;
       navigationTimeout?: number;
@@ -590,6 +605,26 @@ Call ${handleDialog.name} to handle it before continuing.`);
           })
           .join('\n');
         response.push(extensionsMessage);
+      }
+    }
+
+    if (this.#listInPageTools) {
+      structuredContent.inPageTools = data.inPageTools;
+      response.push('## In-page tools');
+      if (!data.inPageTools) {
+        response.push('No in-page tools installed.');
+      } else {
+        const toolGroup = data.inPageTools;
+        response.push(`${toolGroup.name}: ${toolGroup.description}`);
+        response.push('Available tools:');
+        const toolDefinitionsMessage = toolGroup.tools
+          .map(tool => {
+            return `name="${tool.name}", description="${tool.description}", inputSchema=${JSON.stringify(
+              tool.inputSchema,
+            )}`;
+          })
+          .join('\n');
+        response.push(toolDefinitionsMessage);
       }
     }
 

@@ -17,6 +17,7 @@ import type {InstalledExtension} from '../utils/ExtensionRegistry.js';
 import type {PaginationOptions} from '../utils/types.js';
 
 import type {ToolCategory} from './categories.js';
+import type {ToolGroup} from './inPage.js';
 
 export interface ToolDefinition<
   Schema extends zod.ZodRawShape = zod.ZodRawShape,
@@ -94,6 +95,7 @@ export interface Response {
     insightName: InsightName,
   ): void;
   setListExtensions(): void;
+  setListInPageTools(): void;
 }
 
 /**
@@ -149,6 +151,8 @@ export type Context = Readonly<{
   uninstallExtension(id: string): Promise<void>;
   listExtensions(): InstalledExtension[];
   getExtension(id: string): InstalledExtension | undefined;
+  setInPageTools(toolGroup: ToolGroup|undefined): void;
+  getInPageTools(): ToolGroup|undefined;
 }>;
 
 export function defineTool<Schema extends zod.ZodRawShape>(
