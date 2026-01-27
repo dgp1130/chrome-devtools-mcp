@@ -119,9 +119,8 @@ export class McpContext implements Context {
   #dialog?: Dialog;
   #inPageTools?: ToolGroup | null;
   #focusedPagePerContext = new Map<BrowserContext, Page>();
-
   #requestPage?: Page;
-
+  #inPageTools?: ToolGroup;
   #nextPageId = 1;
 
   #extensionServiceWorkerMap = new WeakMap<Target, string>();

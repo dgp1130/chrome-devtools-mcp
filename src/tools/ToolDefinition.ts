@@ -129,6 +129,7 @@ export interface Response {
   setListExtensions(): void;
   setListInPageTools(): void;
   attachLighthouseResult(result: LighthouseData): void;
+  setListInPageTools(): void;
 }
 
 /**

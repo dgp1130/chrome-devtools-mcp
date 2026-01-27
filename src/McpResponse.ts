@@ -456,6 +456,7 @@ export class McpResponse implements Response {
       extensions,
       inPageTools,
       lighthouseResult: this.#attachedLighthouseResult,
+      inPageTools,
     });
   }
 
@@ -473,6 +474,7 @@ export class McpResponse implements Response {
       extensions?: InstalledExtension[];
       inPageTools?: ToolGroup | null;
       lighthouseResult?: LighthouseData;
+      inPageTools?: ToolGroup;
     },
   ): {content: Array<TextContent | ImageContent>; structuredContent: object} {
     const structuredContent: {
