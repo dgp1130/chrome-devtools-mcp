@@ -3,6 +3,7 @@
 Screencast: [http://go/scrcast/NjE1NTMzOTQxNzI1NTkzNnw1NzgwN2Q2MC0wNA](http://go/scrcast/NjE1NTMzOTQxNzI1NTkzNnw1NzgwN2Q2MC0wNA)
 
 Website exposing dummy tools: [https://wolfib.github.io/mcp-runtime-data/](https://wolfib.github.io/mcp-runtime-data/)
+Source: [https://github.com/wolfib/mcp-runtime-data](https://github.com/wolfib/mcp-runtime-data)
 
 # Chrome DevTools MCP
 
