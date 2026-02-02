@@ -1,3 +1,9 @@
+# Branch: Tool Discovery Prototype
+
+Screencast: [http://go/scrcast/NjE1NTMzOTQxNzI1NTkzNnw1NzgwN2Q2MC0wNA](http://go/scrcast/NjE1NTMzOTQxNzI1NTkzNnw1NzgwN2Q2MC0wNA)
+
+Website exposing dummy tools: [https://wolfib.github.io/mcp-runtime-data/](https://wolfib.github.io/mcp-runtime-data/)
+
 # Chrome DevTools MCP
 
 [![npm chrome-devtools-mcp package](https://img.shields.io/npm/v/chrome-devtools-mcp.svg)](https://npmjs.org/package/chrome-devtools-mcp)
