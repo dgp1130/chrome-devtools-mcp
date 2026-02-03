@@ -9,7 +9,7 @@ import {IssueFormatter} from './formatters/IssueFormatter.js';
 import {NetworkFormatter} from './formatters/NetworkFormatter.js';
 import {SnapshotFormatter} from './formatters/SnapshotFormatter.js';
 import type {McpContext} from './McpContext.js';
-import {DevTools} from './third_party/index.js';
+import {DevTools, type Page} from './third_party/index.js';
 import type {
   ConsoleMessage,
   ImageContent,
@@ -34,6 +34,25 @@ interface TraceInsightData {
   trace: TraceResult;
   insightSetId: string;
   insightName: InsightName;
+}
+
+async function getToolGroup(page: Page) {
+  return await page.evaluate(() => {
+    return new Promise<ToolGroup | null>(resolve => {
+      const event = new CustomEvent('devtoolstooldiscovery');
+      // @ts-expect-error adding custom property
+      event.respondWith = (toolGroup: ToolGroup) => {
+        window.__mcp_tool_group = toolGroup;
+        resolve(toolGroup ?? null);
+      };
+      window.dispatchEvent(event);
+      // TODO: replace with checking for existence of event listener?
+      // Can `respondWith` be called asynchronously?
+      setTimeout(() => {
+        resolve(null);
+      }, 0);
+    });
+  });
 }
 
 export class McpResponse implements Response {
@@ -314,9 +333,10 @@ export class McpResponse implements Response {
       extensions = context.listExtensions();
     }
 
-    let inPageTools: ToolGroup | undefined;
+    let inPageTools: ToolGroup | null | undefined;
     if (this.#listInPageTools) {
-      inPageTools = context.getInPageTools();
+      inPageTools = await getToolGroup(context.getSelectedPage());
+      context.setInPageTools(inPageTools);
     }
 
     let consoleMessages: Array<ConsoleFormatter | IssueFormatter> | undefined;
@@ -429,7 +449,7 @@ export class McpResponse implements Response {
       traceSummary?: TraceResult;
       traceInsight?: TraceInsightData;
       extensions?: InstalledExtension[];
-      inPageTools?: ToolGroup;
+      inPageTools?: ToolGroup | null;
     },
   ): {content: Array<TextContent | ImageContent>; structuredContent: object} {
     const structuredContent: {
@@ -609,7 +629,7 @@ Call ${handleDialog.name} to handle it before continuing.`);
     }
 
     if (this.#listInPageTools) {
-      structuredContent.inPageTools = data.inPageTools;
+      structuredContent.inPageTools = data.inPageTools ?? undefined;
       response.push('## In-page tools');
       if (!data.inPageTools) {
         response.push('No in-page tools installed.');

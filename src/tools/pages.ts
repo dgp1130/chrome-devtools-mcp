@@ -19,8 +19,13 @@ export const listPages = defineTool({
     readOnlyHint: true,
   },
   schema: {},
-  handler: async (_request, response) => {
+  handler: async (_request, response, context) => {
     response.setIncludePages(true);
+    // Only include in-page tools in the response, if they haven't already been
+    // sent before.
+    if (context.getInPageTools() === undefined) {
+      response.setListInPageTools();
+    }
   },
 });
 
@@ -46,6 +51,7 @@ export const selectPage = defineTool({
     const page = context.getPageById(request.params.pageId);
     context.selectPage(page);
     response.setIncludePages(true);
+    response.setListInPageTools();
     if (request.params.bringToFront) {
       await page.bringToFront();
     }
@@ -108,6 +114,7 @@ export const newPage = defineTool({
     );
 
     response.setIncludePages(true);
+    response.setListInPageTools();
   },
 });
 
@@ -257,6 +264,7 @@ export const navigatePage = defineTool({
     }
 
     response.setIncludePages(true);
+    response.setListInPageTools();
   },
 });
 

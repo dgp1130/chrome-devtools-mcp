@@ -127,7 +127,7 @@ export class McpContext implements Context {
   #userAgentMap = new WeakMap<Page, string>();
   #colorSchemeMap = new WeakMap<Page, 'dark' | 'light'>();
   #dialog?: Dialog;
-  #inPageTools?: ToolGroup;
+  #inPageTools?: ToolGroup | null;
 
   #pageIdMap = new WeakMap<Page, number>();
   #nextPageId = 1;
@@ -435,11 +435,11 @@ export class McpContext implements Context {
     });
   }
 
-  setInPageTools(toolGroup: ToolGroup|undefined) {
+  setInPageTools(toolGroup: ToolGroup | null) {
     this.#inPageTools = toolGroup;
   }
 
-  getInPageTools(): ToolGroup | undefined {
+  getInPageTools(): ToolGroup | null | undefined {
     return this.#inPageTools;
   }
 

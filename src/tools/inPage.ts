@@ -28,25 +28,6 @@ declare global {
   }
 }
 
-async function getToolGroup(page: Page) {
-  return await page.evaluate(() => {
-    return new Promise<ToolGroup | undefined>(resolve => {
-      const event = new CustomEvent('devtoolstooldiscovery');
-      // @ts-expect-error adding custom property
-      event.respondWith = (toolGroup: ToolGroup) => {
-        window.__mcp_tool_group = toolGroup;
-        resolve(toolGroup);
-      };
-      window.dispatchEvent(event);
-      // TODO: replace with checking for existence of event listener?
-      // Can `respondWith` be called asynchronously?
-      setTimeout(() => {
-        resolve(undefined);
-      }, 0);
-    });
-  });
-}
-
 export const listInPageTools = defineTool({
   name: 'list_in_page_tools',
   description: `Lists all tools the page exposes for providing runtime information.`,
@@ -55,10 +36,7 @@ export const listInPageTools = defineTool({
     readOnlyHint: true,
   },
   schema: {},
-  handler: async (_request, response, context) => {
-    const page = context.getSelectedPage();
-    const toolGroup = await getToolGroup(page);
-    context.setInPageTools(toolGroup);
+  handler: async (_request, response, _context) => {
     response.setListInPageTools();
   },
 });
@@ -80,10 +58,10 @@ export const executeInPageTool = defineTool({
     const params = request.params.params ?? {};
 
     // Get tools from context
-    // const toolGroup = context.getInPageTools();
+    const toolGroup = context.getInPageTools();
     // Alternatively: get tools from page
-    const toolGroup = await getToolGroup(page);
-    context.setInPageTools(toolGroup);
+    // const toolGroup = await getToolGroup(page);
+    // context.setInPageTools(toolGroup);
     const tool = toolGroup?.tools.find(t => t.name === toolName);
     if (!tool) {
       throw new Error(`Tool ${toolName} not found`);
