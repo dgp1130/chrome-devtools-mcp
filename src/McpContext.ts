@@ -70,6 +70,8 @@ interface McpContextOptions {
   experimentalDevToolsDebugging: boolean;
   // Whether all page-like targets are exposed as pages.
   experimentalIncludeAllPages?: boolean;
+  // Whether CrUX data should be fetched.
+  performanceCrux: boolean;
 }
 
 const DEFAULT_TIMEOUT = 5_000;
@@ -370,6 +372,10 @@ export class McpContext implements Context {
 
   isRunningPerformanceTrace(): boolean {
     return this.#isRunningTrace;
+  }
+
+  isCruxEnabled(): boolean {
+    return this.#options.performanceCrux;
   }
 
   getDialog(): Dialog | undefined {
