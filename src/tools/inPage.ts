@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {type Page, zod, ajv, type JSONSchema7} from '../third_party/index.js';
+import {zod, ajv, type JSONSchema7, type ElementHandle} from '../third_party/index.js';
 
 import {ToolCategory} from './categories.js';
 import {defineTool} from './ToolDefinition.js';
@@ -57,6 +57,17 @@ export const executeInPageTool = defineTool({
     const toolName = request.params.toolName;
     const params = request.params.params ?? {};
 
+    // Creates array of ElementHandles from the uids in the params.
+    // We do not replace the uids with the ElementsHandles yet, because
+    // the `evaluate` function only turns them into DOM elements if they
+    // are passed as non-nested arguments.
+    const handles: ElementHandle[] = [];
+    for (const value of Object.values(params)) {
+      if (value instanceof Object && 'uid' in value && typeof value.uid === 'string') {
+        handles.push(await context.getElementByUid(value.uid));
+      }
+    }
+
     // Get tools from context
     const toolGroup = context.getInPageTools();
     // Alternatively: get tools from page
@@ -73,7 +84,14 @@ export const executeInPageTool = defineTool({
       throw new Error(`Invalid parameters for tool ${toolName}: ${ajvInstance.errorsText(validate.errors)}`);
     }
 
-    const result = await page.evaluate(async (name, args) => {
+    const result = await page.evaluate(async (name, args, ...elements) => {
+      // Replace the uids with DOM elements.
+      for (const [key, value] of Object.entries(args)) {
+        if (value instanceof Object && 'uid' in value && typeof value.uid === 'string') {
+          args[key] = elements.shift();
+        }
+      } 
+
       if (!window.__mcp_tool_group) {
         throw new Error('No tools found on the page');
       }
@@ -82,7 +100,7 @@ export const executeInPageTool = defineTool({
         return await tool.execute(args);
       }
       throw new Error(`Tool ${name} not found`);
-    }, toolName, params);
+    }, toolName, params, ...handles);
     response.appendResponseLine(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
   },
 });
