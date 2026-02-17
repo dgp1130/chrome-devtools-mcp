@@ -30,7 +30,11 @@ declare global {
 
 export const listInPageTools = defineTool({
   name: 'list_in_page_tools',
-  description: `Lists all tools the page exposes for providing runtime information.`,
+  description: `Lists all in-page-tools the page exposes for providing runtime information.
+  In-page-tools can be called via the 'execute_in_page_tool()' MCP tool.
+  In addition, the in-page-tools are exposed on the page via the 'window.__mcp_tool_group.tools' array
+  where they can be called by 'evaluate_script'. This might be helpful when the in-page-tools return
+  non-serializable values or when composing the in-page-tools with additional functionality.`,
   annotations: {
     category: ToolCategory.IN_PAGE,
     readOnlyHint: true,
