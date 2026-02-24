@@ -31,6 +31,7 @@ export {
 } from 'puppeteer-core';
 export {default as puppeteer} from 'puppeteer-core';
 export type * from 'puppeteer-core';
+export {PipeTransport} from 'puppeteer-core/internal/node/PipeTransport.js';
 export type {CdpPage} from 'puppeteer-core/internal/cdp/Page.js';
 export type {JSONSchema7} from 'json-schema';
 export {
