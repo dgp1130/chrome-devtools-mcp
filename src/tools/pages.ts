@@ -11,22 +11,24 @@ import {zod} from '../third_party/index.js';
 import {ToolCategory} from './categories.js';
 import {CLOSE_PAGE_ERROR, defineTool, timeoutSchema} from './ToolDefinition.js';
 
-export const listPages = defineTool({
-  name: 'list_pages',
-  description: `Get a list of pages open in the browser.`,
-  annotations: {
-    category: ToolCategory.NAVIGATION,
-    readOnlyHint: true,
-  },
-  schema: {},
-  handler: async (_request, response, context) => {
-    response.setIncludePages(true);
-    // Only include in-page tools in the response, if they haven't already been
-    // sent before.
-    if (context.getInPageTools() === undefined) {
-      response.setListInPageTools();
-    }
-  },
+export const listPages = defineTool(args => {
+  return {
+    name: 'list_pages',
+    description: `Get a list of pages ${args?.categoryExtensions ? 'including extension service workers' : ''} open in the browser.`,
+    annotations: {
+      category: ToolCategory.NAVIGATION,
+      readOnlyHint: true,
+    },
+    schema: {},
+    handler: async (_request, response, context) => {
+      response.setIncludePages(true);
+      // Only include in-page tools in the response, if they haven't already been
+      // sent before.
+      if (context.getInPageTools() === undefined) {
+        response.setListInPageTools();
+      }
+    },
+  };
 });
 
 export const selectPage = defineTool({
@@ -40,7 +42,7 @@ export const selectPage = defineTool({
     pageId: zod
       .number()
       .describe(
-        `The ID of the page to select. Call ${listPages.name} to get available pages.`,
+        `The ID of the page to select. Call ${listPages().name} to get available pages.`,
       ),
     bringToFront: zod
       .boolean()
@@ -380,7 +382,7 @@ export const getTabId = defineTool({
     pageId: zod
       .number()
       .describe(
-        `The ID of the page to get the tab ID for. Call ${listPages.name} to get available pages.`,
+        `The ID of the page to get the tab ID for. Call ${listPages().name} to get available pages.`,
       ),
   },
   handler: async (request, response, context) => {

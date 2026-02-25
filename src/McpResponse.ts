@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type {ParsedArguments} from './cli.js';
 import {ConsoleFormatter} from './formatters/ConsoleFormatter.js';
 import {IssueFormatter} from './formatters/IssueFormatter.js';
 import {NetworkFormatter} from './formatters/NetworkFormatter.js';
@@ -58,6 +59,7 @@ async function getToolGroup(page: Page) {
 
 export class McpResponse implements Response {
   #includePages = false;
+  #includeExtensionServiceWorkers = false;
   #snapshotParams?: SnapshotParams;
   #attachedNetworkRequestId?: number;
   #attachedNetworkRequestOptions?: {
@@ -86,6 +88,11 @@ export class McpResponse implements Response {
   #listInPageTools?: boolean;
   #devToolsData?: DevToolsData;
   #tabId?: string;
+  #args: ParsedArguments;
+
+  constructor(args: ParsedArguments) {
+    this.#args = args;
+  }
 
   attachDevToolsData(data: DevToolsData): void {
     this.#devToolsData = data;
@@ -97,6 +104,10 @@ export class McpResponse implements Response {
 
   setIncludePages(value: boolean): void {
     this.#includePages = value;
+
+    if (this.#args.categoryExtensions) {
+      this.#includeExtensionServiceWorkers = value;
+    }
   }
 
   includeSnapshot(params?: SnapshotParams): void {
@@ -256,6 +267,10 @@ export class McpResponse implements Response {
   }> {
     if (this.#includePages) {
       await context.createPagesSnapshot();
+    }
+
+    if (this.#includeExtensionServiceWorkers) {
+      await context.createExtensionServiceWorkersSnapshot();
     }
 
     let snapshot: SnapshotFormatter | string | undefined;
@@ -473,6 +488,7 @@ export class McpResponse implements Response {
       };
       pages?: object[];
       pagination?: object;
+      extensionServiceWorkers?: object[];
     } = {};
 
     const response = [`# ${toolName} response`];
@@ -565,6 +581,26 @@ Call ${handleDialog.name} to handle it before continuing.`);
         }
         return entry;
       });
+    }
+
+    if (this.#includeExtensionServiceWorkers) {
+      if (!context.getExtensionServiceWorkers().length) {
+        response.push(`## Extension Service Workers`);
+      }
+
+      for (const extensionServiceWorker of context.getExtensionServiceWorkers()) {
+        response.push(
+          `${extensionServiceWorker.id}: ${extensionServiceWorker.url}`,
+        );
+      }
+      structuredContent.extensionServiceWorkers = context
+        .getExtensionServiceWorkers()
+        .map(extensionServiceWorker => {
+          return {
+            id: extensionServiceWorker.id,
+            url: extensionServiceWorker.url,
+          };
+        });
     }
 
     if (this.#tabId) {
