@@ -1008,7 +1008,6 @@ describe('in-page tools', () => {
         'test',
         context,
       );
-
       const responseText = getTextContent(content[0]);
       t.assert.snapshot?.(responseText);
       assert.ok(
@@ -1016,6 +1015,51 @@ describe('in-page tools', () => {
         'Response should include inputSchema',
       );
       t.assert.snapshot?.(JSON.stringify(structuredContent, null, 2));
+    });
+  });
+});
+
+describe('lighthouse', () => {
+  it('includes lighthouse report paths', async t => {
+    await withMcpContext(async (response, context) => {
+      const lighthouseResult = {
+        summary: {
+          mode: 'navigation',
+          device: 'desktop',
+          url: 'https://example.com',
+          scores: [
+            {
+              id: 'performance',
+              title: 'Performance',
+              score: 0.9,
+            },
+          ],
+          audits: {
+            failed: 1,
+            passed: 10,
+          },
+          timing: {
+            total: 1000,
+          },
+        },
+        reports: ['/tmp/report.json', '/tmp/report.html'],
+      };
+
+      response.attachLighthouseResult(lighthouseResult);
+      const {content, structuredContent} = await response.handle(
+        'test',
+        context,
+      );
+
+      const text = getTextContent(content[0]);
+      assert.ok(text.includes('### Reports'));
+      assert.ok(text.includes('- /tmp/report.json'));
+      assert.ok(text.includes('- /tmp/report.html'));
+
+      t.assert.snapshot?.(getTextContent(content[0]));
+      t.assert.snapshot?.(
+        JSON.stringify(stabilizeStructuredContent(structuredContent), null, 2),
+      );
     });
   });
 });

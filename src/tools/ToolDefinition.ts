@@ -66,6 +66,27 @@ export interface SnapshotParams {
   page?: Page;
 }
 
+export interface LighthouseData {
+  summary: {
+    mode: string;
+    device: string;
+    url?: string;
+    scores: Array<{
+      id: string;
+      title: string;
+      score: number | null;
+    }>;
+    audits: {
+      failed: number;
+      passed: number;
+    };
+    timing: {
+      total: number;
+    };
+  };
+  reports: string[];
+}
+
 export interface DevToolsData {
   cdpRequestId?: string;
   cdpBackendNodeId?: number;
@@ -107,6 +128,7 @@ export interface Response {
   ): void;
   setListExtensions(): void;
   setListInPageTools(): void;
+  attachLighthouseResult(result: LighthouseData): void;
 }
 
 /**
@@ -129,6 +151,7 @@ export type Context = Readonly<{
   assertPageIsFocused(page: Page): void;
   getElementByUid(uid: string, page?: Page): Promise<ElementHandle<Element>>;
   getAXNodeByUid(uid: string): TextSnapshotNode | undefined;
+  restoreEmulation(): Promise<void>;
   emulate(
     options: {
       networkConditions?: string | null;
@@ -142,8 +165,8 @@ export type Context = Readonly<{
   ): Promise<void>;
   saveTemporaryFile(
     data: Uint8Array<ArrayBufferLike>,
-    mimeType: 'image/png' | 'image/jpeg' | 'image/webp',
-  ): Promise<{filename: string}>;
+    filename: string,
+  ): Promise<{filepath: string}>;
   saveFile(
     data: Uint8Array<ArrayBufferLike>,
     filename: string,
