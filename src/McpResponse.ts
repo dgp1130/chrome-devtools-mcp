@@ -359,8 +359,11 @@ export class McpResponse implements Response {
 
     let inPageTools: ToolGroup | null | undefined;
     if (this.#listInPageTools) {
-      inPageTools = await getToolGroup(context.getSelectedPage());
-      context.setInPageTools(inPageTools);
+      inPageTools = context.getInPageTools();
+      if (!inPageTools) {
+        inPageTools = await getToolGroup(context.getSelectedPage());
+        context.setInPageTools(inPageTools);
+      }
     }
 
     let consoleMessages: Array<ConsoleFormatter | IssueFormatter> | undefined;

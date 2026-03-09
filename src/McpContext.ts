@@ -239,7 +239,7 @@ export class McpContext implements Context {
       this.logger('no text snapshot');
       return;
     }
-    this.logger('snapshots: ' + JSON.stringify(snapshots, null, 2));
+    // this.logger('snapshots: ' + JSON.stringify(snapshots, null, 2));
     // TODO: index by backendNodeId instead.
     for (const snapshot of snapshots) {
       const queue = [snapshot!.root];
@@ -925,8 +925,8 @@ export class McpContext implements Context {
     const mcpPage = this.#getMcpPage(page);
     const rootNode = await page.accessibility.snapshot({
       includeIframes: true,
-      interestingOnly: !verbose,
-      // interestingOnly: false,
+      // interestingOnly: !verbose,
+      interestingOnly: false,
     });
     if (!rootNode) {
       return;
@@ -977,6 +977,17 @@ export class McpContext implements Context {
 
     const rootNodeWithId = assignIds(rootNode);
 
+    const findNodeByBackendId = (backendNodeId: number): TextSnapshotNode | undefined => {
+      this.logger('findNodeByBackendId', backendNodeId);
+      for (const node of idToNode.values()) {
+        this.logger('node', node.backendNodeId);
+        if (node.backendNodeId === backendNodeId) {
+          return node;
+        }
+      }
+      return undefined;
+    };
+
     if (extraHandles) {
       mcpPage.extraHandles = extraHandles;
     }
@@ -1002,14 +1013,9 @@ export class McpContext implements Context {
         }
         seenUniqueIds.add(uniqueBackendId);
 
-        // const propertyHandle = await handle.getProperty('role');
-        // const propertyValue = await propertyHandle.jsonValue();
         const tagHandle = await handle.getProperty('localName');
         const tagValue = await tagHandle.jsonValue();
-        // const role = await handle.getProperty('role');
         const dummyNode: TextSnapshotNode = {
-          // role: 'StashedElement', // custom role for explicitly appended extra Handles
-          // role: propertyValue || 'generic',
           role: tagValue,
           id,
           backendNodeId,
@@ -1017,8 +1023,37 @@ export class McpContext implements Context {
           elementHandle: async () => handle,
         };
 
-        rootNodeWithId.children.push(dummyNode);
         idToNode.set(dummyNode.id, dummyNode);
+
+        let currentHandle = await handle.evaluateHandle((el) => el.parentElement);
+        let parentNode: TextSnapshotNode | undefined;
+
+        while (currentHandle) {
+          const parentElement = currentHandle.asElement();
+          if (!parentElement) {
+            await currentHandle.dispose();
+            break;
+          }
+
+          const parentBackendId = await parentElement.backendNodeId();
+          if (parentBackendId) {
+            parentNode = findNodeByBackendId(parentBackendId);
+            if (parentNode) {
+              await currentHandle.dispose();
+              break;
+            }
+          }
+
+          const nextHandle = await parentElement.evaluateHandle((el) => el.parentElement);
+          await currentHandle.dispose();
+          currentHandle = nextHandle;
+        }
+
+        if (parentNode) {
+          parentNode.children.push(dummyNode);
+        } else {
+          rootNodeWithId.children.push(dummyNode);
+        }
       }
     }
 
