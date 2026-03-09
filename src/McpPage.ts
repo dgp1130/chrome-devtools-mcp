@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type {Dialog, Page, Viewport} from './third_party/index.js';
+import type {Dialog, Page, Viewport, ElementHandle} from './third_party/index.js';
 import type {
   EmulationSettings,
   GeolocationOptions,
@@ -26,6 +26,7 @@ export class McpPage {
   // Snapshot
   textSnapshot: TextSnapshot | null = null;
   uniqueBackendNodeIdToMcpId = new Map<string, string>();
+  extraHandles?: ElementHandle[];
 
   // Emulation
   emulationSettings: EmulationSettings = {};

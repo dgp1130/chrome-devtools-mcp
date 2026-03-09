@@ -197,6 +197,12 @@ export type Context = Readonly<{
   setInPageTools(toolGroup: ToolGroup | null): void;
   getInPageTools(): ToolGroup | null | undefined;
   resolveCdpElementId(cdpBackendNodeId: number, page?: Page): string | undefined;
+  createTextSnapshot(
+    verbose?: boolean,
+    devtoolsData?: DevToolsData,
+    targetPage?: Page,
+    extraHandles?: ElementHandle[],
+  ): Promise<void>;
 }>;
 
 export function defineTool<Schema extends zod.ZodRawShape>(

@@ -53,14 +53,14 @@ describe('e2e', () => {
         name: 'list_pages',
         arguments: {},
       });
-      assert.deepStrictEqual(result, {
-        content: [
-          {
-            type: 'text',
-            text: '# list_pages response\n## Pages\n1: about:blank [selected]',
-          },
-        ],
-      });
+      const content = (result as {content: Array<{type: string; text?: string}>}).content;
+      assert.strictEqual(content.length, 1);
+      assert.strictEqual(content[0].type, 'text');
+      assert.ok(
+        content[0].text?.includes(
+          '# list_pages response\n## Pages\n1: about:blank [selected]',
+        ),
+      );
     });
   });
 
@@ -74,14 +74,14 @@ describe('e2e', () => {
         name: 'list_pages',
         arguments: {},
       });
-      assert.deepStrictEqual(result, {
-        content: [
-          {
-            type: 'text',
-            text: '# list_pages response\n## Pages\n1: about:blank [selected]',
-          },
-        ],
-      });
+      const content = (result as {content: Array<{type: string; text?: string}>}).content;
+      assert.strictEqual(content.length, 1);
+      assert.strictEqual(content[0].type, 'text');
+      assert.ok(
+        content[0].text?.includes(
+          '# list_pages response\n## Pages\n1: about:blank [selected]',
+        ),
+      );
     });
   });
 

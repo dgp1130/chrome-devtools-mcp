@@ -919,13 +919,14 @@ export class McpContext implements Context {
     verbose = false,
     devtoolsData: DevToolsData | undefined = undefined,
     targetPage?: Page,
+    extraHandles?: ElementHandle[],
   ): Promise<void> {
     const page = targetPage ?? this.getSelectedPage();
     const mcpPage = this.#getMcpPage(page);
     const rootNode = await page.accessibility.snapshot({
       includeIframes: true,
-      // interestingOnly: !verbose,
-      interestingOnly: false,
+      interestingOnly: !verbose,
+      // interestingOnly: false,
     });
     if (!rootNode) {
       return;
@@ -975,6 +976,52 @@ export class McpContext implements Context {
     };
 
     const rootNodeWithId = assignIds(rootNode);
+
+    if (extraHandles) {
+      mcpPage.extraHandles = extraHandles;
+    }
+    const handlesToProcess = extraHandles ?? mcpPage.extraHandles;
+    if (handlesToProcess) {
+      for (const handle of handlesToProcess) {
+        const backendNodeId = await handle.backendNodeId();
+        if (!backendNodeId) {
+          continue;
+        }
+
+        const uniqueBackendId = `custom_${backendNodeId}`;
+        if (seenUniqueIds.has(uniqueBackendId)) {
+          continue;
+        }
+
+        let id = '';
+        if (uniqueBackendNodeIdToMcpId.has(uniqueBackendId)) {
+          id = uniqueBackendNodeIdToMcpId.get(uniqueBackendId)!;
+        } else {
+          id = `${snapshotId}_${idCounter++}`;
+          uniqueBackendNodeIdToMcpId.set(uniqueBackendId, id);
+        }
+        seenUniqueIds.add(uniqueBackendId);
+
+        // const propertyHandle = await handle.getProperty('role');
+        // const propertyValue = await propertyHandle.jsonValue();
+        const tagHandle = await handle.getProperty('localName');
+        const tagValue = await tagHandle.jsonValue();
+        // const role = await handle.getProperty('role');
+        const dummyNode: TextSnapshotNode = {
+          // role: 'StashedElement', // custom role for explicitly appended extra Handles
+          // role: propertyValue || 'generic',
+          role: tagValue,
+          id,
+          backendNodeId,
+          children: [],
+          elementHandle: async () => handle,
+        };
+
+        rootNodeWithId.children.push(dummyNode);
+        idToNode.set(dummyNode.id, dummyNode);
+      }
+    }
+
     const snapshot: TextSnapshot = {
       root: rootNodeWithId,
       snapshotId: String(snapshotId),

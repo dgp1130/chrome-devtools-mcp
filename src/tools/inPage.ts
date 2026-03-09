@@ -165,14 +165,18 @@ export const executeInPageTool = defineTool({
       const backendNodeId = await elementHandles[index].backendNodeId();
       if (!backendNodeId) {
         logger(`Could not get backendNodeId for element ${index}`);
-        return `stashed-${index}`;
+        return {uid: `stashed-${index}`};
       }
-      const cdpElementId = context.resolveCdpElementId(backendNodeId); 
+      let cdpElementId = context.resolveCdpElementId(backendNodeId); 
+      if (!cdpElementId) {
+        await context.createTextSnapshot(false, undefined, page, elementHandles);
+        cdpElementId = context.resolveCdpElementId(backendNodeId);
+      }
       if (!cdpElementId) {
         logger(`Could not get cdpElementId for backend node ${backendNodeId}`);
-        return `stashed-${index}`;
+        return {uid: `stashed-${index}`};
       }
-      return {cdpElementId};
+      return {uid: cdpElementId};
     };
 
     const walkTree = async (node: any): Promise<any> => {
@@ -197,5 +201,6 @@ export const executeInPageTool = defineTool({
     // response.appendResponseLine(`PROVIDERS: ${(response as any)[0].value.providers[0]}`);
     // response.appendResponseLine(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
     response.appendResponseLine(typeof resultWithUids === 'string' ? resultWithUids : JSON.stringify(resultWithUids, null, 2));
+    response.includeSnapshot({page});
   },
 });

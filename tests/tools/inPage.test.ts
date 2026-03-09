@@ -38,6 +38,7 @@ describe('inPage', () => {
 
         const evaluateStub = sinon.stub(page, 'evaluate');
         evaluateStub.resolves(toolGroup);
+        context.setInPageTools(toolGroup);
 
         await listInPageTools.handler(
           {params: {}},
@@ -101,8 +102,8 @@ describe('inPage', () => {
         };
 
         const evaluateStub = sinon.stub(page, 'evaluate');
-        evaluateStub.onFirstCall().resolves(toolGroup);
-        evaluateStub.onSecondCall().resolves('result');
+        evaluateStub.resolves({result: 'result', stashed: 0});
+        context.setInPageTools(toolGroup);
 
         await executeInPageTool.handler(
           {
@@ -130,6 +131,7 @@ describe('inPage', () => {
 
         const evaluateStub = sinon.stub(page, 'evaluate');
         evaluateStub.resolves(toolGroup);
+        context.setInPageTools(toolGroup);
 
         await assert.rejects(
           async () => {
@@ -173,6 +175,7 @@ describe('inPage', () => {
 
         const evaluateStub = sinon.stub(page, 'evaluate');
         evaluateStub.resolves(toolGroup);
+        context.setInPageTools(toolGroup);
 
         await assert.rejects(
           async () => {
@@ -209,8 +212,8 @@ describe('inPage', () => {
         };
 
         const evaluateStub = sinon.stub(page, 'evaluate');
-        evaluateStub.onFirstCall().resolves(toolGroup);
-        evaluateStub.onSecondCall().resolves({foo: 'bar'});
+        evaluateStub.resolves({result: {foo: 'bar'}, stashed: 0});
+        context.setInPageTools(toolGroup);
 
         await executeInPageTool.handler(
           {
