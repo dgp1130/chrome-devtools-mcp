@@ -120,7 +120,7 @@ export class McpContext implements Context {
   #inPageTools?: ToolGroup | null;
   #focusedPagePerContext = new Map<BrowserContext, Page>();
   #requestPage?: Page;
-  #inPageTools?: ToolGroup;
+  #inPageTools?: ToolGroup|null;
   #pageIdMap = new WeakMap<Page, number>();
   #nextPageId = 1;
 
@@ -239,6 +239,7 @@ export class McpContext implements Context {
       this.logger('no text snapshot');
       return;
     }
+    this.logger('snapshots: ' + JSON.stringify(snapshots, null, 2));
     // TODO: index by backendNodeId instead.
     for (const snapshot of snapshots) {
       const queue = [snapshot!.root];
@@ -923,7 +924,8 @@ export class McpContext implements Context {
     const mcpPage = this.#getMcpPage(page);
     const rootNode = await page.accessibility.snapshot({
       includeIframes: true,
-      interestingOnly: !verbose,
+      // interestingOnly: !verbose,
+      interestingOnly: false,
     });
     if (!rootNode) {
       return;

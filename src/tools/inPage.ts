@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import {logger} from '../logger.js';
 import {zod, ajv, type JSONSchema7, type ElementHandle} from '../third_party/index.js';
 
 import {ToolCategory} from './categories.js';
@@ -25,6 +26,7 @@ export interface ToolGroup {
 declare global {
   interface Window {
     __mcp_tool_group?: ToolGroup;
+    __mcp_stashed_elements?: HTMLElement[];
   }
 }
 
@@ -100,11 +102,100 @@ export const executeInPageTool = defineTool({
         throw new Error('No tools found on the page');
       }
       const tool = window.__mcp_tool_group.tools.find(t => t.name === name);
-      if (tool) {
-        return await tool.execute(args);
+      if (!tool) {
+        throw new Error(`Tool ${name} not found`);
       }
-      throw new Error(`Tool ${name} not found`);
+      const toolResult = await tool.execute(args);
+      console.log('toolResult', toolResult);
+
+      const stashDOMElement = (el: HTMLElement) => {
+        if (window.__mcp_stashed_elements === undefined) {
+          window.__mcp_stashed_elements = [];
+        }
+        window.__mcp_stashed_elements.push(el);
+        return {uid: `stashed-${window.__mcp_stashed_elements.length - 1}`};
+      };
+
+      // Walks the tool result and replaces all DOM elements with uids.
+      const stashAllDOMElements = (data: any) => {
+        // 1. Handle DOM Elements
+        if (data instanceof HTMLElement) {
+          return stashDOMElement(data);
+        }
+
+        // 2. Handle Arrays
+        if (Array.isArray(data)) {
+          return data.map((item: any): any => stashAllDOMElements(item));
+        }
+
+        // 3. Handle Objects
+        if (data !== null && typeof data === 'object') {
+          const processedObj: {
+            [key: string]: number | string,
+          } = {};
+          for (const [key, value] of Object.entries(data)) {
+            processedObj[key] = stashAllDOMElements(value);
+          }
+          return processedObj;
+        }
+
+        // 4. Return primitives (strings, numbers, booleans) as-is
+        return data;
+      };
+      const resultWithStashedElements = stashAllDOMElements(toolResult);
+      console.log('resultWithStashedElements', resultWithStashedElements);
+      return {result: resultWithStashedElements, stashed: window.__mcp_stashed_elements?.length};
     }, toolName, params, ...handles);
-    response.appendResponseLine(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
+
+    const elementHandles: ElementHandle[] = [];
+    for (let i = 0; i < (result.stashed ?? 0); i++) {
+      const elementHandle = await page.evaluateHandle((index) => {
+        return window.__mcp_stashed_elements?.[index];
+      }, i);
+      logger('elementHandle', elementHandle);
+      // if (elementHandle instanceof ElementHandle) {
+        elementHandles.push(elementHandle as ElementHandle);
+      // }
+    }
+
+    const resultWithStashedElements = result.result;
+    logger('resultWithStashedElements', JSON.stringify(resultWithStashedElements, null, 2));
+
+    const stashedToUid = async (index: number) => {
+      const backendNodeId = await elementHandles[index].backendNodeId();
+      if (!backendNodeId) {
+        logger(`Could not get backendNodeId for element ${index}`);
+        return `stashed-${index}`;
+      }
+      const cdpElementId = context.resolveCdpElementId(backendNodeId); 
+      if (!cdpElementId) {
+        logger(`Could not get cdpElementId for backend node ${backendNodeId}`);
+        return `stashed-${index}`;
+      }
+      return {cdpElementId};
+    };
+
+    const walkTree = async (node: any): Promise<any> => {
+      if (Array.isArray(node)) {
+        return await Promise.all(node.map(async x => await walkTree(x)));
+      }
+      if (node !== null && typeof node === 'object') {
+        if (node.uid && node.uid.startsWith('stashed-')) {
+          const index = parseInt(node.uid.split('-')[1]);
+          return stashedToUid(index);
+        }
+        for (const [key, value] of Object.entries(node)) {
+          node[key] = await walkTree(value);
+        }
+      }
+      return node;
+    };
+
+    const resultWithUids = await walkTree(resultWithStashedElements);
+    logger('resultWithUids', JSON.stringify(resultWithUids, null, 2));
+
+    // response.appendResponseLine(`PROVIDERS: ${(response as any)[0].value.providers[0]}`);
+    // response.appendResponseLine(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
+    response.appendResponseLine(typeof resultWithUids === 'string' ? resultWithUids : JSON.stringify(resultWithUids, null, 2));
   },
 });

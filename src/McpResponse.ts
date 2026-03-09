@@ -283,6 +283,7 @@ export class McpResponse implements Response {
       await context.createExtensionServiceWorkersSnapshot();
     }
 
+    // here
     let snapshot: SnapshotFormatter | string | undefined;
     if (this.#snapshotParams) {
       await context.createTextSnapshot(
