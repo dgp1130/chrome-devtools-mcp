@@ -925,8 +925,7 @@ export class McpContext implements Context {
     const mcpPage = this.#getMcpPage(page);
     const rootNode = await page.accessibility.snapshot({
       includeIframes: true,
-      // interestingOnly: !verbose,
-      interestingOnly: false,
+      interestingOnly: !verbose,
     });
     if (!rootNode) {
       return;
@@ -978,9 +977,7 @@ export class McpContext implements Context {
     const rootNodeWithId = assignIds(rootNode);
 
     const findNodeByBackendId = (backendNodeId: number): TextSnapshotNode | undefined => {
-      this.logger('findNodeByBackendId', backendNodeId);
       for (const node of idToNode.values()) {
-        this.logger('node', node.backendNodeId);
         if (node.backendNodeId === backendNodeId) {
           return node;
         }
@@ -1049,11 +1046,48 @@ export class McpContext implements Context {
           currentHandle = nextHandle;
         }
 
-        if (parentNode) {
-          parentNode.children.push(dummyNode);
-        } else {
-          rootNodeWithId.children.push(dummyNode);
+        const attachTarget = parentNode || rootNodeWithId;
+
+        const descendantIds = new Set<number>();
+        try {
+          // @ts-expect-error internal API
+          const client = page._client();
+          if (client) {
+            const { node } = await client.send('DOM.describeNode', {
+              backendNodeId,
+              depth: -1,
+              pierce: true,
+            });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const collect = (n: any) => {
+              if (n.backendNodeId && n.backendNodeId !== backendNodeId) {
+                descendantIds.add(n.backendNodeId);
+              }
+              if (n.children) {
+                for (const child of n.children) {
+                  collect(child);
+                }
+              }
+            };
+            collect(node);
+          }
+        } catch (e) {
+          this.logger('Failed to collect descendants for dummy node', e);
         }
+
+        if (descendantIds.size > 0 && attachTarget.children) {
+          const remainingChildren: TextSnapshotNode[] = [];
+          for (const child of attachTarget.children) {
+            if (child.backendNodeId && descendantIds.has(child.backendNodeId)) {
+              dummyNode.children.push(child);
+            } else {
+              remainingChildren.push(child);
+            }
+          }
+          attachTarget.children = remainingChildren;
+        }
+
+        attachTarget.children.push(dummyNode);
       }
     }
 
