@@ -153,13 +153,9 @@ export const executeInPageTool = defineTool({
         return window.__mcp_stashed_elements?.[index];
       }, i);
       logger('elementHandle', elementHandle);
-      // if (elementHandle instanceof ElementHandle) {
-        elementHandles.push(elementHandle as ElementHandle);
-      // }
+      elementHandles.push(elementHandle as ElementHandle);
     }
-
     const resultWithStashedElements = result.result;
-    // logger('resultWithStashedElements', JSON.stringify(resultWithStashedElements, null, 2));
 
     const stashedToUid = async (index: number) => {
       const backendNodeId = await elementHandles[index].backendNodeId();
@@ -196,10 +192,6 @@ export const executeInPageTool = defineTool({
     };
 
     const resultWithUids = await walkTree(resultWithStashedElements);
-    // logger('resultWithUids', JSON.stringify(resultWithUids, null, 2));
-
-    // response.appendResponseLine(`PROVIDERS: ${(response as any)[0].value.providers[0]}`);
-    // response.appendResponseLine(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
     response.appendResponseLine(typeof resultWithUids === 'string' ? resultWithUids : JSON.stringify(resultWithUids, null, 2));
     response.includeSnapshot({page});
   },
